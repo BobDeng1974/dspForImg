@@ -48,6 +48,11 @@ FORMS += \
 # for windows mingw32 compiler
 INCLUDEPATH += E:\openCV3.2_ex\Debug_x64\include\
                E:\openCV3.2_ex\Debug_x64\include\opencv\
-               E:\openCV3.2_ex\Debug_x64\include\opencv2
+               E:\openCV3.2_ex\Debug_x64\include\opencv2\
+               E:\ChormeDownloads\boost_1_65_1
 LIBS += E:/openCV3.2_ex/Debug_x64/x64/vc14/lib/opencv_*.lib
 LIBS += E:/openCV3.2_ex/Release_x64/x64/vc14/lib/opencv_*.lib
+
+DISTFILES += \
+    settings.json \
+    README.md
