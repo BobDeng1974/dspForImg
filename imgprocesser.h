@@ -18,7 +18,7 @@ public:
     QVariantMap settings;
 
     const float scale=1;
-
+    const float fontSize=1;
 };
 
 #endif // IMGPROCESSER_H
