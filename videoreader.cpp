@@ -37,7 +37,7 @@ bool videoReader::open(QString file)
             qDebug()<<":) opening IP camera OK"<<endl;
             fps=videoCapture.get(CV_CAP_PROP_FPS);
             if(fps==0)
-                fps=20;
+                fps=30;
             timer->setInterval(1000/fps);
             qDebug()<<"fps is: "<<fps<<endl;
 
