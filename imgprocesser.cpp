@@ -81,36 +81,45 @@ cv::Mat imgProcesser::process(const cv::Mat &src)
         }
     }
 
+    cv::Mat maskFiltered=cv::Mat::zeros(gray.size(), gray.type());
+    for(int i=0;i<contoursFilted.size();i++){
+        for (cv::Point p : contoursFilted[i]){
+            maskFiltered.at<uchar>(p.y, p.x) = 255;
+        }
+    }
+
+
 
     double  t_all = (double)cv::getTickCount();
 
-    double expand=0.2;
-    for(int i=0;i<boxsFiltered.size();i++){
-       cv::Rect box = boxsFiltered[i];
-       cv::Point pTopLeft = box.tl();
-       cv::Point pBottomRight = box.br();
+//    double expand=0.2;
+//    for(int i=0;i<boxsFiltered.size();i++){
+//       cv::Rect box = boxsFiltered[i];
+//       cv::Point pTopLeft = box.tl();
+//       cv::Point pBottomRight = box.br();
 
-       pTopLeft.x -= round(expand*box.height);
-       if(pTopLeft.x<0) pTopLeft.x=0;
-       pBottomRight.x += round(expand*box.height);
-       if(pBottomRight.x>cols) pBottomRight.x = cols;
-//       pTopLeft.y -= (int)(expand*box.height);
-//       if(pTopLeft.y<0) pTopLeft.y=0;
-//       pBottomRight.y += (int)(expand*box.height);
-//       if(pBottomRight.y>rows) pBottomRight.y = rows;
-       cv::Rect rRect(pTopLeft, pBottomRight);
-       boxsFiltered.at(i) = rRect;
-    }
+//       pTopLeft.x -= round(expand*box.height);
+//       if(pTopLeft.x<0) pTopLeft.x=0;
+//       pBottomRight.x += round(expand*box.height);
+//       if(pBottomRight.x>cols) pBottomRight.x = cols;
+////       pTopLeft.y -= (int)(expand*box.height);
+////       if(pTopLeft.y<0) pTopLeft.y=0;
+////       pBottomRight.y += (int)(expand*box.height);
+////       if(pBottomRight.y>rows) pBottomRight.y = rows;
+//       cv::Rect rRect(pTopLeft, pBottomRight);
+//       boxsFiltered.at(i) = rRect;
+//    }
 
-    cv::Mat mask = cv::Mat::zeros(gray.size(), gray.type());
+//    cv::Mat mask = cv::Mat::zeros(gray.size(), gray.type());
     vector<cv::Rect> nm_boxes;
-    for (int i = 0; i < boxsFiltered.size(); i++){
-        cv::rectangle(mask, boxsFiltered[i].tl(), boxsFiltered[i].br(), cv::Scalar(255), CV_FILLED); // Draw filled bounding boxes on mask
-    }
+//    for (int i = 0; i < boxsFiltered.size(); i++){
+//        cv::rectangle(mask, boxsFiltered[i].tl(), boxsFiltered[i].br(), cv::Scalar(255), CV_FILLED); // Draw filled bounding boxes on mask
+//    }
+
     std::vector<std::vector<cv::Point>> contours;
     // Find contours in mask
     // If bounding boxes overlap, they will be joined by this function call
-    cv::findContours(mask, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
+    cv::findContours(maskFiltered, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
     for (int j = 0; j < contours.size(); j++){
         nm_boxes.push_back(cv::boundingRect(contours.at(j)));
     }
@@ -141,8 +150,13 @@ cv::Mat imgProcesser::process(const cv::Mat &src)
     {
         rectangle(out_img, nm_boxes[i].tl(), nm_boxes[i].br(), Scalar(255,255,0),3);
         Mat group_img = Mat::zeros(dst.rows+2, dst.cols+2, CV_8UC1);
-        gray(nm_boxes[i]).copyTo(group_img);//webcam_demo.cpp wrong here
-        copyMakeBorder(group_img,group_img,15,15,15,15,BORDER_CONSTANT,Scalar(0));
+        maskFiltered(nm_boxes[i]).copyTo(group_img);//webcam_demo.cpp wrong here
+        //copyMakeBorder(group_img,group_img,15,15,15,15,BORDER_CONSTANT,Scalar(0));
+        float imgScale = 24.0/group_img.rows;
+        Size dsize = Size(int(group_img.cols*imgScale),int(group_img.rows*imgScale));
+        cv::resize(group_img,group_img,dsize);
+        group_img = 255-group_img;
+        copyMakeBorder(group_img,group_img,4,4,4,4,BORDER_CONSTANT,Scalar(255));
         detections.push_back(group_img);
     }
     vector<string> outputs((int)detections.size());
@@ -161,37 +175,40 @@ cv::Mat imgProcesser::process(const cv::Mat &src)
     }
     for (int i=0; i<(int)detections.size(); i++)
     {
-        outputs[i].erase(remove(outputs[i].begin(), outputs[i].end(), '\n'), outputs[i].end());
-        if (outputs[i].size() < 3)
-            continue;
+        imshow("detection",detections[i]);
+        qDebug()<<QString::fromStdString(outputs[i])<<endl;
+        i=i;
+//        outputs[i].erase(remove(outputs[i].begin(), outputs[i].end(), '\n'), outputs[i].end());
+//        if (outputs[i].size() < 3)
+//            continue;
 
-        for (int j=0; j<(int)boxes[i].size(); j++)
-        {
-            boxes[i][j].x += nm_boxes[i].x-15;
-            boxes[i][j].y += nm_boxes[i].y-15;
+//        for (int j=0; j<(int)boxes[i].size(); j++)
+//        {
+//            boxes[i][j].x += nm_boxes[i].x-15;
+//            boxes[i][j].y += nm_boxes[i].y-15;
 
-            //cout << "  word = " << words[j] << "\t confidence = " << confidences[j] << endl;
-            if ((words[i][j].size() < 2) || (confidences[i][j] < min_confidence1) ||
-                    ((words[i][j].size()==2) && (words[i][j][0] == words[i][j][1])) ||
-                    ((words[i][j].size()< 4) && (confidences[i][j] < min_confidence2)) ||
-                    isRepetitive(words[i][j]))
-                continue;
-            words_detection.push_back(words[i][j]);
-            rectangle(out_img, boxes[i][j].tl(), boxes[i][j].br(), Scalar(255,0,255),3);
-            Size word_size = getTextSize(words[i][j], FONT_HERSHEY_SIMPLEX, (double)scale_font, (int)(3*scale_font), NULL);
-            rectangle(out_img, boxes[i][j].tl()-Point(3,word_size.height+3), boxes[i][j].tl()+Point(word_size.width,0), Scalar(255,0,255),-1);
-            putText(out_img, words[i][j], boxes[i][j].tl()-Point(1,1), FONT_HERSHEY_SIMPLEX, scale_font, Scalar(255,255,255),(int)(3*scale_font));
-        }
+//            //cout << "  word = " << words[j] << "\t confidence = " << confidences[j] << endl;
+//            if ((words[i][j].size() < 2) || (confidences[i][j] < min_confidence1) ||
+//                    ((words[i][j].size()==2) && (words[i][j][0] == words[i][j][1])) ||
+//                    ((words[i][j].size()< 4) && (confidences[i][j] < min_confidence2)) ||
+//                    isRepetitive(words[i][j]))
+//                continue;
+//            words_detection.push_back(words[i][j]);
+//            rectangle(out_img, boxes[i][j].tl(), boxes[i][j].br(), Scalar(255,0,255),3);
+//            Size word_size = getTextSize(words[i][j], FONT_HERSHEY_SIMPLEX, (double)scale_font, (int)(3*scale_font), NULL);
+//            rectangle(out_img, boxes[i][j].tl()-Point(3,word_size.height+3), boxes[i][j].tl()+Point(word_size.width,0), Scalar(255,0,255),-1);
+//            putText(out_img, words[i][j], boxes[i][j].tl()-Point(1,1), FONT_HERSHEY_SIMPLEX, scale_font, Scalar(255,255,255),(int)(3*scale_font));
+//        }
     }
 //    t_all = ((double)getTickCount() - t_all)*1000/getTickFrequency();
 //    qDebug()<<"ocr time: "<<t_all<<endl;
 
-    int text_thickness = 1+(out_img.rows/500);
-    string fps_info = format("%2.1f Fps. %dx%d", (float)(1000 / t_all), dst.cols, dst.rows);
-    putText(out_img, fps_info, Point( 10,out_img.rows-5 ), FONT_HERSHEY_DUPLEX, scale_font, Scalar(255,0,0), text_thickness);
-    putText(out_img, region_types_str[REGION_TYPE], Point((int)(out_img.cols*0.5), out_img.rows - (int)(bottom_bar_height / 1.5)), FONT_HERSHEY_DUPLEX, scale_font, Scalar(255,0,0), text_thickness);
-    putText(out_img, grouping_algorithms_str[GROUPING_ALGORITHM], Point((int)(out_img.cols*0.5),out_img.rows-((int)(bottom_bar_height /3)+4) ), FONT_HERSHEY_DUPLEX, scale_font, Scalar(255,0,0), text_thickness);
-    putText(out_img, recognitions_str[RECOGNITION], Point((int)(out_img.cols*0.5),out_img.rows-5 ), FONT_HERSHEY_DUPLEX, scale_font, Scalar(255,0,0), text_thickness);
+//    int text_thickness = 1+(out_img.rows/500);
+//    string fps_info = format("%2.1f Fps. %dx%d", (float)(1000 / t_all), dst.cols, dst.rows);
+//    putText(out_img, fps_info, Point( 10,out_img.rows-5 ), FONT_HERSHEY_DUPLEX, scale_font, Scalar(255,0,0), text_thickness);
+//    putText(out_img, region_types_str[REGION_TYPE], Point((int)(out_img.cols*0.5), out_img.rows - (int)(bottom_bar_height / 1.5)), FONT_HERSHEY_DUPLEX, scale_font, Scalar(255,0,0), text_thickness);
+//    putText(out_img, grouping_algorithms_str[GROUPING_ALGORITHM], Point((int)(out_img.cols*0.5),out_img.rows-((int)(bottom_bar_height /3)+4) ), FONT_HERSHEY_DUPLEX, scale_font, Scalar(255,0,0), text_thickness);
+//    putText(out_img, recognitions_str[RECOGNITION], Point((int)(out_img.cols*0.5),out_img.rows-5 ), FONT_HERSHEY_DUPLEX, scale_font, Scalar(255,0,0), text_thickness);
 
 
     return out_img;

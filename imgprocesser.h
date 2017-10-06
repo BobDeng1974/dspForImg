@@ -32,6 +32,8 @@ public:
     const int  REGION_TYPE = 1;
     const int  GROUPING_ALGORITHM = 0;
     const int  RECOGNITION = 0;
+
+
 };
 
 //OCR recognition is done in parallel for different detections
