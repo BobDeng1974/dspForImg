@@ -45,10 +45,10 @@ FORMS += \
 #                /usr/local/include/opencv2
 #LIBS += /usr/local/lib/libopencv_*.so
 
-INCLUDEPATH += E:\downloads\opencv\build\install\include\
-               E:\downloads\opencv\build\install\include\opencv\
-               E:\downloads\opencv\build\install\include\opencv2
-LIBS += E:\downloads\opencv\build\install/x64/vc15/lib/opencv_*.lib
+INCLUDEPATH += E:\downloads\opencv\build\include\
+               E:\downloads\opencv\build\include\opencv\
+               E:\downloads\opencv\build\include\opencv2
+LIBS += E:\downloads\opencv\build/x64/vc15/lib/opencv_*.lib
 
 DISTFILES += \
     settings.json \

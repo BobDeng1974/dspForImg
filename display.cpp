@@ -78,12 +78,12 @@ void display::getNewFrame()
 
 
     src = vReader->rawFrame.clone();
-//    cv::resize(src, src, cv::Size(src.size().width,src.size().height), 0, 0, CV_INTER_LINEAR);
-//    ui->src->setPixmap(QPixmap::fromImage(ImageFormat::Mat2QImage(src)).scaled(w,h,Qt::KeepAspectRatio));
+    cv::resize(src, src, cv::Size(src.size().width,src.size().height), 0, 0, CV_INTER_LINEAR);
+    ui->src->setPixmap(QPixmap::fromImage(ImageFormat::Mat2QImage(src)).scaled(w,h,Qt::KeepAspectRatio));
 
     dst = iPro->process(src);
-//    cv::resize(dst, dst, cv::Size(dst.size().width,dst.size().height), 0, 0, CV_INTER_LINEAR);
-//    ui->dst->setPixmap(QPixmap::fromImage(ImageFormat::Mat2QImage(dst)).scaled(w2,h2,Qt::KeepAspectRatio));
+    cv::resize(dst, dst, cv::Size(dst.size().width,dst.size().height), 0, 0, CV_INTER_LINEAR);
+    ui->dst->setPixmap(QPixmap::fromImage(ImageFormat::Mat2QImage(dst)).scaled(w2,h2,Qt::KeepAspectRatio));
 }
 
 void display::on_refresh_clicked()

@@ -29,6 +29,8 @@ bool isRepetitive(const string& s)
 
 cv::Mat imgProcesser::process(const cv::Mat &src)
 {
+    double  t_all = (double)cv::getTickCount();
+
     cv::Mat dst = src.clone();
     cv::Mat out_img = src.clone();
 
@@ -49,6 +51,7 @@ cv::Mat imgProcesser::process(const cv::Mat &src)
 
 //    cv::Ptr<cv::MSER> mserExtractor = cv::MSER::create(21,
 //                         (int)(0.00002*cols*rows), (int)(0.05*cols*rows), 1, 0.7);
+
     cv::Ptr<cv::MSER> mserExtractor = cv::MSER::create();
     vector<vector<cv::Point>> mserContours, contoursFilted;
     vector<cv::Rect> mserBbox, boxsFiltered;
@@ -56,15 +59,15 @@ cv::Mat imgProcesser::process(const cv::Mat &src)
     for(int i=0;i<mserContours.size();i++){
         vector<cv::Point> contour = mserContours[i];
         cv::Rect box = mserBbox[i];
-
-        cv::Mat maskT = cv::Mat::zeros(gray.size(), gray.type());
-                for (cv::Point p : contour){
-                    maskT.at<uchar>(p.y, p.x) = 255;
-                }
-        cv::Canny(maskT, maskT, 100, 100, 3);
-        maskT = maskT/255;
-        int edgeNum = cv::sum(maskT)[0];
-//        qDebug()<< edgeNum*cols/contour.size()<<endl;
+        cv::Mat mask = cv::Mat::zeros(gray.size(), gray.type());
+        for (cv::Point p : contour){
+            mask.at<uchar>(p.y, p.x) = 255;
+        }
+        Mat maskInv = (255-mask)>0;
+        dilate(mask,mask,Mat());
+        mask = maskInv.mul(mask);
+        int edgeNum = cv::sum(mask/255)[0];
+//        qDebug()<<"contour.size(): " << edgeNum*cols/contour.size()<<endl;
         bool flag = contour.size()*100/fontSize<edgeNum*cols//similar to swt(Stroke Width Transform)
                     && box.height>box.width
                     && box.height<box.width*10
@@ -86,8 +89,8 @@ cv::Mat imgProcesser::process(const cv::Mat &src)
         }
     }
 
-    dilate(maskFiltered,maskFiltered,Mat());
-    dilate(maskFiltered,maskFiltered,Mat());
+//    dilate(maskFiltered,maskFiltered,Mat());
+//    dilate(maskFiltered,maskFiltered,Mat());
 
 //    imshow("filter1",maskFiltered);
 //    Mat edge;
@@ -95,17 +98,17 @@ cv::Mat imgProcesser::process(const cv::Mat &src)
 //    edge = edge > 0;
 //    maskFiltered = maskFiltered.mul(edge);
 
-    dilate(maskFiltered,maskFiltered,Mat());
-    dilate(maskFiltered,maskFiltered,Mat());
-    erode(maskFiltered,maskFiltered,Mat());
-    erode(maskFiltered,maskFiltered,Mat());
+//    dilate(maskFiltered,maskFiltered,Mat());
+//    dilate(maskFiltered,maskFiltered,Mat());
+//    erode(maskFiltered,maskFiltered,Mat());
+//    erode(maskFiltered,maskFiltered,Mat());
 
 
-    imshow("filter2",maskFiltered);
+//    imshow("filter2",maskFiltered);
 
 
 
-    double  t_all = (double)cv::getTickCount();
+
 
 //    double expand=0.2;
 //    for(int i=0;i<boxsFiltered.size();i++){
@@ -125,7 +128,7 @@ cv::Mat imgProcesser::process(const cv::Mat &src)
 //       boxsFiltered.at(i) = rRect;
 //    }
 
-//    cv::Mat mask = cv::Mat::zeros(gray.size(), gray.type());
+
     vector<cv::Rect> nm_boxes,nm_boxes2;
 //    for (int i = 0; i < boxsFiltered.size(); i++){
 //        cv::rectangle(mask, boxsFiltered[i].tl(), boxsFiltered[i].br(), cv::Scalar(255), CV_FILLED); // Draw filled bounding boxes on mask
@@ -141,58 +144,47 @@ cv::Mat imgProcesser::process(const cv::Mat &src)
 
     //find >=3 continue box
     int boxN = nm_boxes.size();
+//    qDebug()<<"boxN: "<<boxN<<endl;
+    for (int i=0; i<(int)nm_boxes.size(); i++){
+        cv::Scalar color = cv::Scalar(0, 0, 0);
+        cv::rectangle(out_img, nm_boxes[i].tl(), nm_boxes[i].br(), color,2);
+    }
     if(boxN>0){
-        QSet<int> possible, finalPossible;
-        cv::Mat pointsY=cv::Mat::zeros(cv::Size(1,boxN),CV_32FC1); //Nx1
-        for (int i=0; i<boxN; i++){
-            pointsY.at<float>(i,0) = nm_boxes[i].tl().y;
-        }
-        cv::Mat ones=cv::Mat::zeros(cv::Size(boxN,1),CV_32FC1);    //Nx1
-        cv::Mat eyes=cv::Mat::eye(cv::Size(boxN,boxN),CV_32FC1)*10000;
-        Mat subY = pointsY*ones - (pointsY*ones).t()+eyes;
-        for(int i=0;i<subY.rows;i++){
-            for(int j=0;j<subY.cols;j++){
-                if(abs(subY.at<float>(j,i))<nm_boxes[i].height*0.4 &&
-                        abs(nm_boxes[i].height-nm_boxes[j].height)<nm_boxes[i].height*0.4){
-                    possible.insert(i);
-                    possible.insert(j);
-                }
-            }
-        }
-
-
-        for (QSet<int>::iterator i = possible.begin(); i != possible.end(); ++i){
-            int x1 = nm_boxes[*i].tl().x;
-            int adjCounts=0;
-            int iterCache=0;
-            int disCache=0;
-            for (QSet<int>::iterator j = possible.begin(); j != possible.end(); ++j){
-                int x2 = nm_boxes[*j].tl().x;
-                if(abs(x2-x1)<nm_boxes[*i].height*1.5 &&
-                        (disCache==0 || abs(abs(x2-x1)-disCache)<nm_boxes[*i].height*0.2)){
-                    adjCounts++;
-                    if(adjCounts>1){
-                        finalPossible.insert(iterCache);
-                        finalPossible.insert(*j);
-                    }else{
-                        iterCache=*j;
-                        disCache = abs(x2-x1);
+        QSet<int> heightPossible;
+        for(int i=0;i<boxN;i++){
+            int yi = nm_boxes[i].tl().y;
+            int xi = nm_boxes[i].tl().x;
+            int thresh = nm_boxes[i].height;
+            int sameCounts=0;
+            int jCache;
+            for(int j=0;j<boxN;j++){
+                int yj = nm_boxes[j].tl().y;
+                int xj = nm_boxes[j].tl().x;
+                if(i!=j){
+                    if(abs(nm_boxes[i].height-nm_boxes[j].height)*2<nm_boxes[i].height
+                            && abs(yi-yj)*2<thresh && abs(xi-xj)<1.5*thresh){
+                        if(sameCounts>0){
+                            heightPossible.insert(i);
+                            heightPossible.insert(j);
+                            heightPossible.insert(jCache);
+                        }else{
+                            sameCounts++;
+                            jCache = j;
+                        }
                     }
                 }
             }
         }
-        for (QSet<int>::iterator i = finalPossible.begin(); i != finalPossible.end(); ++i){
+        for (QSet<int>::iterator i = heightPossible.begin(); i != heightPossible.end(); ++i){
             nm_boxes2.push_back(nm_boxes[*i]);
         }
         nm_boxes.clear();
         nm_boxes = nm_boxes2;
     }
-
-//    for (int i=0; i<(int)nm_boxes.size(); i++){
-//        cv::Scalar color = cv::Scalar(rand() % (155) + 100, rand() % 155 + 100, rand() % 155 + 100);
-//        cv::rectangle(out_img, nm_boxes[i].tl(), nm_boxes[i].br(), color,2);
-//    }
-
+    for (int i=0; i<(int)nm_boxes.size(); i++){
+        cv::Scalar color = cv::Scalar(rand() % (155) + 100, rand() % 155 + 100, rand() % 155 + 100);
+        cv::rectangle(out_img, nm_boxes[i].tl(), nm_boxes[i].br(), color,2);
+    }
 
 //    qDebug()<<nm_boxes.size()<<endl;
 
@@ -211,32 +203,41 @@ cv::Mat imgProcesser::process(const cv::Mat &src)
     vector<Mat> detections;
     for (int i=0; i<(int)nm_boxes.size(); i++)
     {
-        rectangle(out_img, nm_boxes[i].tl(), nm_boxes[i].br(), Scalar(255,255,0),3);
+    //    rectangle(out_img, nm_boxes[i].tl(), nm_boxes[i].br(), Scalar(255,255,0),3);
         Mat group_img = Mat::zeros(dst.rows+2, dst.cols+2, CV_8UC1);
         gray(nm_boxes[i]).copyTo(group_img);//webcam_demo.cpp wrong here
         //copyMakeBorder(group_img,group_img,15,15,15,15,BORDER_CONSTANT,Scalar(0));
         float imgScale = 20.0/group_img.rows;
         Size dsize = Size(int(group_img.cols*imgScale),int(group_img.rows*imgScale));
         cv::resize(group_img,group_img,dsize);
-        group_img = 255-group_img;
         int diff1 = (group_img.rows-group_img.cols)/2;
         int diff2 = (group_img.rows-group_img.cols)/2+(group_img.rows-group_img.cols)%2;
+        threshold(group_img, group_img, 150, 255, THRESH_BINARY|THRESH_OTSU);
         copyMakeBorder(group_img,group_img,4,4,
                        diff1+4,diff2+4,
                        BORDER_CONSTANT,Scalar(255));
         detections.push_back(group_img);
+//        imshow("to ocr:",group_img);
     }
+
+//    if(detections.size()>0)
+//    return detections[rand()%detections.size()];
 
     for (int i=0; i<(int)detections.size(); i++)
     {
         vector<int> out_classes;
         vector<double> out_confidences;
+        string outText;
 
-        ocr->eval(detections[i], out_classes, out_confidences);
+//        ocrHMM_CNN->eval(detections[i], out_classes, out_confidences);
+//        QString out = /*QString::number(int(out_confidences[0]*100))+"%"+"_"+*/
+//                      vocabulary[out_classes[0]]+" ";
 
-        QString out = /*QString::number(int(out_confidences[0]*100))+"%"+"_"+*/
-                      vocabulary[out_classes[0]]+" ";
-//        qDebug() << "OCR output = \"" << out << "\" with confidence "
+        ocrTess->run(detections[i],outText);
+        outText.erase(std::remove(outText.begin(), outText.end(), '\n'), outText.end());
+        QString out = QString::fromStdString(outText);
+//        qDebug()<<out<<endl;
+//        qDebug() << "OCR output "<< i <<" = \"" << out << "\" with confidence "
 //             << out_confidences[0]<<endl;
 
         Size word_size = getTextSize(out.toStdString(), FONT_HERSHEY_SIMPLEX, (double)scale_font, (int)(3*scale_font), NULL);
@@ -246,7 +247,6 @@ cv::Mat imgProcesser::process(const cv::Mat &src)
     t_all = ((double)getTickCount() - t_all)*1000/getTickFrequency();
     qDebug()<<"ocr time: "<<t_all<<endl;
 
-
-    imshow("out", out_img);
+//    imshow("out", out_img);
     return out_img;
 }
