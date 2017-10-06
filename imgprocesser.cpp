@@ -7,10 +7,7 @@ using namespace std;
 
 imgProcesser::imgProcesser()
 {
-    for (int o=0; o<num_ocrs; o++)
-    {
-        ocrs.push_back(OCRTesseract::create());
-    }
+
 }
 
 bool isRepetitive(const string& s)
@@ -152,7 +149,7 @@ cv::Mat imgProcesser::process(const cv::Mat &src)
         Mat group_img = Mat::zeros(dst.rows+2, dst.cols+2, CV_8UC1);
         maskFiltered(nm_boxes[i]).copyTo(group_img);//webcam_demo.cpp wrong here
         //copyMakeBorder(group_img,group_img,15,15,15,15,BORDER_CONSTANT,Scalar(0));
-        float imgScale = 24.0/group_img.rows;
+        float imgScale = 20.0/group_img.rows;
         Size dsize = Size(int(group_img.cols*imgScale),int(group_img.rows*imgScale));
         cv::resize(group_img,group_img,dsize);
         group_img = 255-group_img;
@@ -160,55 +157,27 @@ cv::Mat imgProcesser::process(const cv::Mat &src)
         detections.push_back(group_img);
     }
     vector<string> outputs((int)detections.size());
-    vector< vector<Rect> > boxes((int)detections.size());
-    vector< vector<string> > words((int)detections.size());
     vector< vector<float> > confidences((int)detections.size());
-    // parallel process detections in batches of ocrs.size() (== num_ocrs)
-    for (int i=0; i<(int)detections.size(); i=i+(int)num_ocrs){
-        Range r;
-        if (i+(int)num_ocrs <= (int)detections.size())
-            r = Range(i,i+(int)num_ocrs);
-        else
-            r = Range(i,(int)detections.size());
 
-        parallel_for_(r, Parallel_OCR<cv::text::OCRTesseract>(detections, outputs, boxes, words, confidences, ocrs));
-    }
     for (int i=0; i<(int)detections.size(); i++)
     {
-        imshow("detection",detections[i]);
-        qDebug()<<QString::fromStdString(outputs[i])<<endl;
-        i=i;
-//        outputs[i].erase(remove(outputs[i].begin(), outputs[i].end(), '\n'), outputs[i].end());
-//        if (outputs[i].size() < 3)
-//            continue;
+        vector<int> out_classes;
+        vector<double> out_confidences;
 
-//        for (int j=0; j<(int)boxes[i].size(); j++)
-//        {
-//            boxes[i][j].x += nm_boxes[i].x-15;
-//            boxes[i][j].y += nm_boxes[i].y-15;
+        ocr->eval(detections[i], out_classes, out_confidences);
 
-//            //cout << "  word = " << words[j] << "\t confidence = " << confidences[j] << endl;
-//            if ((words[i][j].size() < 2) || (confidences[i][j] < min_confidence1) ||
-//                    ((words[i][j].size()==2) && (words[i][j][0] == words[i][j][1])) ||
-//                    ((words[i][j].size()< 4) && (confidences[i][j] < min_confidence2)) ||
-//                    isRepetitive(words[i][j]))
-//                continue;
-//            words_detection.push_back(words[i][j]);
-//            rectangle(out_img, boxes[i][j].tl(), boxes[i][j].br(), Scalar(255,0,255),3);
-//            Size word_size = getTextSize(words[i][j], FONT_HERSHEY_SIMPLEX, (double)scale_font, (int)(3*scale_font), NULL);
-//            rectangle(out_img, boxes[i][j].tl()-Point(3,word_size.height+3), boxes[i][j].tl()+Point(word_size.width,0), Scalar(255,0,255),-1);
-//            putText(out_img, words[i][j], boxes[i][j].tl()-Point(1,1), FONT_HERSHEY_SIMPLEX, scale_font, Scalar(255,255,255),(int)(3*scale_font));
-//        }
+        QString out = vocabulary[out_classes[0]]+"_"
+                +QString::number(int(out_confidences[0]*100));
+        qDebug() << "OCR output = \"" << out << "\" with confidence "
+             << out_confidences[0]<<endl;
+
+        Size word_size = getTextSize(out.toStdString(), FONT_HERSHEY_SIMPLEX, (double)scale_font, (int)(3*scale_font), NULL);
+        rectangle(out_img, nm_boxes[i].tl()-Point(3,word_size.height+3), nm_boxes[i].tl()+Point(word_size.width,0), Scalar(255,0,255),-1);
+        putText(out_img, out.toStdString(), nm_boxes[i].tl()-Point(1,1), FONT_HERSHEY_SIMPLEX, scale_font, Scalar(255,255,255),(int)(3*scale_font));
     }
 //    t_all = ((double)getTickCount() - t_all)*1000/getTickFrequency();
 //    qDebug()<<"ocr time: "<<t_all<<endl;
 
-//    int text_thickness = 1+(out_img.rows/500);
-//    string fps_info = format("%2.1f Fps. %dx%d", (float)(1000 / t_all), dst.cols, dst.rows);
-//    putText(out_img, fps_info, Point( 10,out_img.rows-5 ), FONT_HERSHEY_DUPLEX, scale_font, Scalar(255,0,0), text_thickness);
-//    putText(out_img, region_types_str[REGION_TYPE], Point((int)(out_img.cols*0.5), out_img.rows - (int)(bottom_bar_height / 1.5)), FONT_HERSHEY_DUPLEX, scale_font, Scalar(255,0,0), text_thickness);
-//    putText(out_img, grouping_algorithms_str[GROUPING_ALGORITHM], Point((int)(out_img.cols*0.5),out_img.rows-((int)(bottom_bar_height /3)+4) ), FONT_HERSHEY_DUPLEX, scale_font, Scalar(255,0,0), text_thickness);
-//    putText(out_img, recognitions_str[RECOGNITION], Point((int)(out_img.cols*0.5),out_img.rows-5 ), FONT_HERSHEY_DUPLEX, scale_font, Scalar(255,0,0), text_thickness);
 
 
     return out_img;
