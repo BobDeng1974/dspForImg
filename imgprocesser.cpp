@@ -45,6 +45,7 @@ cv::Mat imgProcesser::process(const cv::Mat &src)
 //    message = message + "mser time: " + QString::number((int)t_all) + " ms   ";
 //    t_all = (double)cv::getTickCount();
 
+    cv::Mat maskS = cv::Mat::zeros(gray.size(), gray.type());
     for(int i=0;i<mserContours.size();i++){
         vector<cv::Point> contour = mserContours[i];
         cv::Rect box = mserBbox[i];
@@ -58,6 +59,7 @@ cv::Mat imgProcesser::process(const cv::Mat &src)
             cv::Mat mask = cv::Mat::zeros(gray.size(), gray.type());
             for (cv::Point p : contour){
                 mask.at<uchar>(p.y, p.x) = 255;
+                maskS.at<uchar>(p.y, p.x) = 1;
             }
             Mat maskInv = (255-mask)>0;
             dilate(mask,mask,Mat());
@@ -160,15 +162,22 @@ cv::Mat imgProcesser::process(const cv::Mat &src)
         gray(nm_boxes2[i]).copyTo(group_img);//webcam_demo.cpp wrong here
         //copyMakeBorder(group_img,group_img,15,15,15,15,BORDER_CONSTANT,Scalar(0));
 
+        Mat selectedChildren = Mat::zeros(dst.rows+2, dst.cols+2, CV_8UC1);
+        maskS(nm_boxes2[i]).copyTo(selectedChildren);
+        int selectedChildren_height = cv::sum(group_img.mul(selectedChildren))[0]/cv::sum(selectedChildren)[0];
+        int others_height = cv::sum(group_img.mul(1-selectedChildren))[0]/cv::sum(1-selectedChildren)[0];
+        //this is how mser work: select area is high or low?
+
         threshold(group_img, group_img, 150, 255, THRESH_BINARY|THRESH_OTSU);
+        if(selectedChildren_height>others_height){
+            group_img = 255-group_img; // convert to black-num-white-bg
+        }
 
         float imgScale = 20.0/group_img.rows;
         Size dsize = Size(int(group_img.cols*imgScale),int(group_img.rows*imgScale));
         cv::resize(group_img,group_img,dsize);
 
-        if(cv::sum(group_img)[0]<255*group_img.cols*group_img.rows/2){
-            group_img = 255-group_img;
-        }
+
 
         int diff1 = (group_img.rows-group_img.cols)/2;
         int diff2 = (group_img.rows-group_img.cols)/2+(group_img.rows-group_img.cols)%2;
