@@ -82,6 +82,7 @@ void display::getNewFrame()
     ui->src->setPixmap(QPixmap::fromImage(ImageFormat::Mat2QImage(src)).scaled(w,h,Qt::KeepAspectRatio));
 
     dst = iPro->process(src);
+    displayMessage(iPro->message);
     cv::resize(dst, dst, cv::Size(dst.size().width,dst.size().height), 0, 0, CV_INTER_LINEAR);
     ui->dst->setPixmap(QPixmap::fromImage(ImageFormat::Mat2QImage(dst)).scaled(w2,h2,Qt::KeepAspectRatio));
 }
@@ -99,4 +100,9 @@ void display::on_refresh_clicked()
     file.close();
     settings = QJsonDocument::fromJson(val.toUtf8()).toVariant().toMap();
     iPro->settings = settings;
+}
+
+void display::displayMessage(QString src)
+{
+    ui->message->setText(src);
 }

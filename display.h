@@ -34,6 +34,8 @@ private slots:
     void getNewFrame();
     void on_refresh_clicked();
 
+    void displayMessage(QString src);
+
 private:
     Ui::display *ui;
     videoReader *vReader;

@@ -10,23 +10,6 @@ imgProcesser::imgProcesser()
 
 }
 
-bool isRepetitive(const string& s)
-{
-    int count = 0;
-    for (int i=0; i<(int)s.size(); i++)
-    {
-        if ((s[i] == 'i') ||
-                (s[i] == 'l') ||
-                (s[i] == 'I'))
-            count++;
-    }
-    if (count > ((int)s.size()+1)/2)
-    {
-        return true;
-    }
-    return false;
-}
-
 cv::Mat imgProcesser::process(const cv::Mat &src)
 {
     double  t_all = (double)cv::getTickCount();
@@ -49,10 +32,10 @@ cv::Mat imgProcesser::process(const cv::Mat &src)
 //    qDebug()<<"preprocess time: "<<t_all<<endl;
 //    t_all = (double)getTickCount();
 
-//    cv::Ptr<cv::MSER> mserExtractor = cv::MSER::create(21,
-//                         (int)(0.00002*cols*rows), (int)(0.05*cols*rows), 1, 0.7);
+    cv::Ptr<cv::MSER> mserExtractor = cv::MSER::create(21,
+                         (int)(0.00002*cols*rows), (int)(0.05*cols*rows), 1, 0.7);
 
-    cv::Ptr<cv::MSER> mserExtractor = cv::MSER::create();
+//    cv::Ptr<cv::MSER> mserExtractor = cv::MSER::create();
     vector<vector<cv::Point>> mserContours, contoursFilted;
     vector<cv::Rect> mserBbox, boxsFiltered;
     mserExtractor->detectRegions(gray, mserContours,  mserBbox);
@@ -220,13 +203,16 @@ cv::Mat imgProcesser::process(const cv::Mat &src)
 //        imshow("to ocr:",group_img);
     }
 
-//    if(detections.size()>0)
-//    return detections[rand()%detections.size()];
+    if(settings["p1"].toInt()>0){
+        if(detections.size()>0)
+        return detections[rand()%detections.size()];
+    }
+
 
     for (int i=0; i<(int)detections.size(); i++)
     {
-        vector<int> out_classes;
-        vector<double> out_confidences;
+        vector<string> out_strings;
+        vector<float> confidences;
         string outText;
 
 //        ocrHMM_CNN->eval(detections[i], out_classes, out_confidences);
@@ -245,8 +231,8 @@ cv::Mat imgProcesser::process(const cv::Mat &src)
         putText(out_img, out.toStdString(), nm_boxes[i].tl()-Point(1,1), FONT_HERSHEY_SIMPLEX, scale_font, Scalar(255,255,255),(int)(3*scale_font));
     }
     t_all = ((double)getTickCount() - t_all)*1000/getTickFrequency();
-    qDebug()<<"ocr time: "<<t_all<<endl;
-
+//    qDebug()<<"ocr time: "<<t_all<<endl;
+    message = "ocr time: " + QString::number((int)t_all) + " ms";
 //    imshow("out", out_img);
     return out_img;
 }
