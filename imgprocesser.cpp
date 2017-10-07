@@ -72,9 +72,6 @@ cv::Mat imgProcesser::process(const cv::Mat &src)
         }
     }
 
-//    dilate(maskFiltered,maskFiltered,Mat());
-//    dilate(maskFiltered,maskFiltered,Mat());
-
 //    imshow("filter1",maskFiltered);
 //    Mat edge;
 //    Canny(gray, edge, 100, 200, 3);
@@ -118,8 +115,6 @@ cv::Mat imgProcesser::process(const cv::Mat &src)
 //    }
 
     std::vector<std::vector<cv::Point>> contours;
-    // Find contours in mask
-    // If bounding boxes overlap, they will be joined by this function call
     cv::findContours(maskFiltered, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
     for (int j = 0; j < contours.size(); j++){
         nm_boxes.push_back(cv::boundingRect(contours.at(j)));
@@ -161,15 +156,15 @@ cv::Mat imgProcesser::process(const cv::Mat &src)
         for (QSet<int>::iterator i = heightPossible.begin(); i != heightPossible.end(); ++i){
             nm_boxes2.push_back(nm_boxes[*i]);
         }
-        nm_boxes.clear();
-        nm_boxes = nm_boxes2;
+//        nm_boxes.clear();
+//        nm_boxes = nm_boxes2;
     }
-    for (int i=0; i<(int)nm_boxes.size(); i++){
+    for (int i=0; i<(int)nm_boxes2.size(); i++){
         cv::Scalar color = cv::Scalar(rand() % (155) + 100, rand() % 155 + 100, rand() % 155 + 100);
-        cv::rectangle(out_img, nm_boxes[i].tl(), nm_boxes[i].br(), color,2);
+        cv::rectangle(out_img, nm_boxes2[i].tl(), nm_boxes2[i].br(), color,2);
     }
 
-//    qDebug()<<nm_boxes.size()<<endl;
+//    qDebug()<<nm_boxes2.size()<<endl;
 
 //    t_all = ((double)cv::getTickCount() - t_all)*1000/cv::getTickFrequency();
 //    qDebug()<<"grouping time: "<<std::round(t_all)<<" ms"<<endl;
@@ -184,28 +179,40 @@ cv::Mat imgProcesser::process(const cv::Mat &src)
     min_confidence2 = 60.f;
 
     vector<Mat> detections;
-    for (int i=0; i<(int)nm_boxes.size(); i++)
+    for (int i=0; i<(int)nm_boxes2.size(); i++)
     {
-    //    rectangle(out_img, nm_boxes[i].tl(), nm_boxes[i].br(), Scalar(255,255,0),3);
+    //    rectangle(out_img, nm_boxes2[i].tl(), nm_boxes2[i].br(), Scalar(255,255,0),3);
         Mat group_img = Mat::zeros(dst.rows+2, dst.cols+2, CV_8UC1);
-        gray(nm_boxes[i]).copyTo(group_img);//webcam_demo.cpp wrong here
+        gray(nm_boxes2[i]).copyTo(group_img);//webcam_demo.cpp wrong here
         //copyMakeBorder(group_img,group_img,15,15,15,15,BORDER_CONSTANT,Scalar(0));
+
+        threshold(group_img, group_img, 150, 255, THRESH_BINARY|THRESH_OTSU);
+
         float imgScale = 20.0/group_img.rows;
         Size dsize = Size(int(group_img.cols*imgScale),int(group_img.rows*imgScale));
         cv::resize(group_img,group_img,dsize);
+
+        if(cv::sum(group_img)[0]<255*group_img.cols*group_img.rows/2){
+            group_img = 255-group_img;
+        }
+
         int diff1 = (group_img.rows-group_img.cols)/2;
         int diff2 = (group_img.rows-group_img.cols)/2+(group_img.rows-group_img.cols)%2;
-        threshold(group_img, group_img, 150, 255, THRESH_BINARY|THRESH_OTSU);
         copyMakeBorder(group_img,group_img,4,4,
                        diff1+4,diff2+4,
                        BORDER_CONSTANT,Scalar(255));
+
+
         detections.push_back(group_img);
 //        imshow("to ocr:",group_img);
     }
 
     if(settings["p1"].toInt()>0){
-        if(detections.size()>0)
-        return detections[rand()%detections.size()];
+        if(detections.size()>0){
+            imshow("char to ocr",detections[rand()%detections.size()]);
+//            return detections[rand()%detections.size()];
+        }
+
     }
 
 
@@ -227,8 +234,8 @@ cv::Mat imgProcesser::process(const cv::Mat &src)
 //             << out_confidences[0]<<endl;
 
         Size word_size = getTextSize(out.toStdString(), FONT_HERSHEY_SIMPLEX, (double)scale_font, (int)(3*scale_font), NULL);
-        rectangle(out_img, nm_boxes[i].tl()-Point(3,word_size.height+3), nm_boxes[i].tl()+Point(word_size.width,0), Scalar(255,0,255),-1);
-        putText(out_img, out.toStdString(), nm_boxes[i].tl()-Point(1,1), FONT_HERSHEY_SIMPLEX, scale_font, Scalar(255,255,255),(int)(3*scale_font));
+        rectangle(out_img, nm_boxes2[i].tl()-Point(3,word_size.height+3), nm_boxes2[i].tl()+Point(word_size.width,0), Scalar(255,0,255),-1);
+        putText(out_img, out.toStdString(), nm_boxes2[i].tl()-Point(1,1), FONT_HERSHEY_SIMPLEX, scale_font, Scalar(255,255,255),(int)(3*scale_font));
     }
     t_all = ((double)getTickCount() - t_all)*1000/getTickFrequency();
 //    qDebug()<<"ocr time: "<<t_all<<endl;
