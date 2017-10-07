@@ -13,6 +13,7 @@ imgProcesser::imgProcesser()
 cv::Mat imgProcesser::process(const cv::Mat &src)
 {
     double  t_all = (double)cv::getTickCount();
+    message.clear();
 
     cv::Mat dst = src.clone();
     cv::Mat out_img = src.clone();
@@ -39,86 +40,59 @@ cv::Mat imgProcesser::process(const cv::Mat &src)
     vector<vector<cv::Point>> mserContours, contoursFilted;
     vector<cv::Rect> mserBbox, boxsFiltered;
     mserExtractor->detectRegions(gray, mserContours,  mserBbox);
+
+//    t_all = ((double)getTickCount() - t_all)*1000/getTickFrequency();
+//    message = message + "mser time: " + QString::number((int)t_all) + " ms   ";
+//    t_all = (double)cv::getTickCount();
+
     for(int i=0;i<mserContours.size();i++){
         vector<cv::Point> contour = mserContours[i];
         cv::Rect box = mserBbox[i];
-        cv::Mat mask = cv::Mat::zeros(gray.size(), gray.type());
-        for (cv::Point p : contour){
-            mask.at<uchar>(p.y, p.x) = 255;
-        }
-        Mat maskInv = (255-mask)>0;
-        dilate(mask,mask,Mat());
-        mask = maskInv.mul(mask);
-        int edgeNum = cv::sum(mask/255)[0];
 //        qDebug()<<"contour.size(): " << edgeNum*cols/contour.size()<<endl;
-        bool flag = contour.size()*100/fontSize<edgeNum*cols//similar to swt(Stroke Width Transform)
-                    && box.height>box.width
+
+         bool flag =   box.height>box.width
                     && box.height<box.width*10
                     && box.height*20/scale>rows
                     && box.width*50/scale>cols;
         if(flag){
-                    boxsFiltered.push_back(box);
-                    contoursFilted.push_back(contour);
-//                    for (cv::Point p : contour){
-//                        mask.at<uchar>(p.y, p.x) = 255;
-//                    }
+            cv::Mat mask = cv::Mat::zeros(gray.size(), gray.type());
+            for (cv::Point p : contour){
+                mask.at<uchar>(p.y, p.x) = 255;
+            }
+            Mat maskInv = (255-mask)>0;
+            dilate(mask,mask,Mat());
+            mask = maskInv.mul(mask);
+            int edgeNum = cv::sum(mask/255)[0];
+            if(contour.size()*100/fontSize<edgeNum*cols){
+                //similar to swt(Stroke Width Transform))
+                // too heavy so put it in second stage
+                boxsFiltered.push_back(box);
+                contoursFilted.push_back(contour);
+            }
         }
     }
 
-    cv::Mat maskFiltered=cv::Mat::zeros(gray.size(), gray.type());
+//    t_all = ((double)getTickCount() - t_all)*1000/getTickFrequency();
+//    message = message + "filter time: " + QString::number((int)t_all) + " ms   ";
+//    t_all = (double)cv::getTickCount();
+
+
+
+    vector<cv::Rect> nm_boxes, nm_boxes2;
+    cv::Mat maskFiltered = cv::Mat::zeros(gray.size(), gray.type());
     for(int i=0;i<contoursFilted.size();i++){
         for (cv::Point p : contoursFilted[i]){
             maskFiltered.at<uchar>(p.y, p.x) = 255;
         }
     }
-
-//    imshow("filter1",maskFiltered);
-//    Mat edge;
-//    Canny(gray, edge, 100, 200, 3);
-//    edge = edge > 0;
-//    maskFiltered = maskFiltered.mul(edge);
-
-//    dilate(maskFiltered,maskFiltered,Mat());
-//    dilate(maskFiltered,maskFiltered,Mat());
-//    erode(maskFiltered,maskFiltered,Mat());
-//    erode(maskFiltered,maskFiltered,Mat());
-
-
-//    imshow("filter2",maskFiltered);
-
-
-
-
-
-//    double expand=0.2;
-//    for(int i=0;i<boxsFiltered.size();i++){
-//       cv::Rect box = boxsFiltered[i];
-//       cv::Point pTopLeft = box.tl();
-//       cv::Point pBottomRight = box.br();
-
-//       pTopLeft.x -= round(expand*box.height);
-//       if(pTopLeft.x<0) pTopLeft.x=0;
-//       pBottomRight.x += round(expand*box.height);
-//       if(pBottomRight.x>cols) pBottomRight.x = cols;
-////       pTopLeft.y -= (int)(expand*box.height);
-////       if(pTopLeft.y<0) pTopLeft.y=0;
-////       pBottomRight.y += (int)(expand*box.height);
-////       if(pBottomRight.y>rows) pBottomRight.y = rows;
-//       cv::Rect rRect(pTopLeft, pBottomRight);
-//       boxsFiltered.at(i) = rRect;
-//    }
-
-
-    vector<cv::Rect> nm_boxes,nm_boxes2;
-//    for (int i = 0; i < boxsFiltered.size(); i++){
-//        cv::rectangle(mask, boxsFiltered[i].tl(), boxsFiltered[i].br(), cv::Scalar(255), CV_FILLED); // Draw filled bounding boxes on mask
-//    }
-
     std::vector<std::vector<cv::Point>> contours;
     cv::findContours(maskFiltered, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
     for (int j = 0; j < contours.size(); j++){
         nm_boxes.push_back(cv::boundingRect(contours.at(j)));
     }
+
+
+
 
     //find >=3 continue box
     int boxN = nm_boxes.size();
@@ -239,7 +213,7 @@ cv::Mat imgProcesser::process(const cv::Mat &src)
     }
     t_all = ((double)getTickCount() - t_all)*1000/getTickFrequency();
 //    qDebug()<<"ocr time: "<<t_all<<endl;
-    message = "ocr time: " + QString::number((int)t_all) + " ms";
+    message = message + "ocr time: " + QString::number((int)t_all) + " ms   ";
 //    imshow("out", out_img);
     return out_img;
 }
