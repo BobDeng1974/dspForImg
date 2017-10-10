@@ -65,11 +65,23 @@ cv::Mat imgProcesser::process(const cv::Mat &src)
             dilate(mask,mask,Mat());
             mask = maskInv.mul(mask);
             int edgeNum = cv::sum(mask/255)[0];
+
+            // stroke width < threshold
             if(contour.size()*100/fontSize<edgeNum*cols){
-                //similar to swt(Stroke Width Transform))
-                // too heavy so put it in second stage
-                boxsFiltered.push_back(box);
-                contoursFilted.push_back(contour);
+                Mat swt32f;
+                distanceTransform(mask, swt32f, CV_DIST_L2, 5);
+                Mat tmp_m, tmp_sd;
+                meanStdDev(swt32f, tmp_m, tmp_sd, swt32f>0);
+                double sd = tmp_sd.at<double>(0,0);
+                double m = tmp_m.at<double>(0,0);
+                // qDebug()<<" std/m: " + QString::number(sd/m)<<endl;
+                if(sd/m<0.5){
+                    // stroke width variation < threshold
+                    //similar to swt(Stroke Width Transform))
+                    // too heavy so put it in second stage
+                    boxsFiltered.push_back(box);
+                    contoursFilted.push_back(contour);
+                }
             }
         }
     }
@@ -201,15 +213,8 @@ cv::Mat imgProcesser::process(const cv::Mat &src)
 
     for (int i=0; i<(int)detections.size(); i++)
     {
-        vector<string> out_strings;
-        vector<float> confidences;
         string outText;
-
-//        ocrHMM_CNN->eval(detections[i], out_classes, out_confidences);
-//        QString out = /*QString::number(int(out_confidences[0]*100))+"%"+"_"+*/
-//                      vocabulary[out_classes[0]]+" ";
-
-        ocrTess->run(detections[i],outText);
+        outText = ocrTess->run(detections[i], 65.0);
         outText.erase(std::remove(outText.begin(), outText.end(), '\n'), outText.end());
         QString out = QString::fromStdString(outText);
 //        qDebug()<<out<<endl;
