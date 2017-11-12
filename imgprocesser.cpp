@@ -3,7 +3,6 @@
 
 using namespace std;
 using namespace cv;
-using namespace cv::text;
 
 imgProcesser::imgProcesser()
 {
@@ -11,19 +10,23 @@ imgProcesser::imgProcesser()
 }
 
 
-cv::Mat imgProcesser::process(const cv::Mat &src)
+cv::Mat imgProcesser::process(cv::Mat &src)
 {
     double t_all = (double)getTickCount();
+
     cv::Mat dst;
     dst = src.clone();
-//  pyrDown( dst, dst);
-//  pyrDown( dst, dst);
+
+    int levels = log2(dst.cols/16);
+    for(int i=0; i<levels ; i++){
+            pyrDown(dst,dst);
+    }
 
 
-    t_all = ((double)getTickCount() - t_all)*1000/getTickFrequency();
-    qDebug()<<"detection time: "<<t_all<<endl;
-    t_all = (double)getTickCount();
+//    t_all = ((double)getTickCount() - t_all)*1000/getTickFrequency();
+//    qDebug()<<"detection time: "<<t_all<<endl;
+//    t_all = (double)getTickCount();
 
-
-    return out_img;
+    qDebug()<<"------------------"<<endl;
+    return dst;
 }
