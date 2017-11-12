@@ -40,14 +40,14 @@ FORMS += \
         display.ui
 
 # for ubuntu
-#INCLUDEPATH += /usr/local/include \
-#                /usr/local/include/opencv \
-#                /usr/local/include/opencv2
-#LIBS += /usr/local/lib/libopencv_*.so
+INCLUDEPATH += /usr/local/include \
+                /usr/local/include/opencv \
+                /usr/local/include/opencv2
+LIBS += /usr/local/lib/libopencv_*.so
 
-# for windows mingw32 compiler
-INCLUDEPATH += E:\openCV3.2_ex\Debug_x64\include\
-               E:\openCV3.2_ex\Debug_x64\include\opencv\
-               E:\openCV3.2_ex\Debug_x64\include\opencv2
-LIBS += E:/openCV3.2_ex/Debug_x64/x64/vc14/lib/opencv_*.lib
-LIBS += E:/openCV3.2_ex/Release_x64/x64/vc14/lib/opencv_*.lib
+## for windows mingw32 compiler
+#INCLUDEPATH += E:\openCV3.2_ex\Debug_x64\include\
+#               E:\openCV3.2_ex\Debug_x64\include\opencv\
+#               E:\openCV3.2_ex\Debug_x64\include\opencv2
+#LIBS += E:/openCV3.2_ex/Debug_x64/x64/vc14/lib/opencv_*.lib
+#LIBS += E:/openCV3.2_ex/Release_x64/x64/vc14/lib/opencv_*.lib
