@@ -7,6 +7,12 @@ display::display(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::display)
 {
+
+    platformPrefix = "/home/meiqua/dspForImg/";
+    #ifdef Q_OS_WIN
+      platformPrefix = "C:\\Users\\Administrator\\Desktop\\dspForImg\\";
+    #endif
+
     ui->setupUi(this);
     centralWidget()->setLayout(ui->centralWgt);
     vReader = new videoReader;
@@ -24,7 +30,7 @@ display::~display()
 void display::on_open_clicked()
 {
     QVariant path = settings["path"];
-    if(vReader->open(path.toString())){
+    if(vReader->open(platformPrefix + path.toString())){
         vReader->timer->start();
         ui->start->setText("pause");
         if(vReader->totalFrame>0){
@@ -115,9 +121,9 @@ void display::on_refresh_clicked()
 {
     QString val;
     QFile file;
-    // for ubuntu
-    file.setFileName("/home/meiqua/dspForImg/settings.json");
-//    file.setFileName("D:\\dspForImg\\settings.json");
+
+    // for windows
+    file.setFileName(platformPrefix + "settings.json");
     file.open(QIODevice::ReadOnly | QIODevice::Text);
     val = file.readAll();
     file.close();
