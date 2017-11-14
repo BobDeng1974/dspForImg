@@ -24,6 +24,7 @@ cv::Mat imgProcesser::process(cv::Mat &src)
     for(int i=levels-1;i>=0;i--){
         pyrDown(images[i+1],images[i]);
     }
+    dst = images[1];
 
 //    t_all = ((double)getTickCount() - t_all)*1000/getTickFrequency();
 //    qDebug()<<"detection time: "<<t_all<<endl;
