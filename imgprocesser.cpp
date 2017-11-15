@@ -47,6 +47,7 @@ cv::Mat imgProcesser::process(cv::Mat &src)
     dst = images[0];
 
     resize(dst,dst,images[levels].size(), 0, 0, INTER_NEAREST);
+//    resize(dst,dst,images[levels].size(), 0, 0, INTER_LINEAR);
 
 //    t_all = ((double)getTickCount() - t_all)*1000/getTickFrequency();
 //    qDebug()<<"detection time: "<<t_all<<endl;
