@@ -5,13 +5,13 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <QVariantMap>
-#include "opencv2/text.hpp"
 #include "opencv2/core/utility.hpp"
 #include "opencv2/features2d.hpp"
 
 using namespace std;
 using namespace cv;
 using namespace cv::text;
+
 class imgProcesser
 {
 public:
@@ -22,6 +22,7 @@ public:
 
     const float scale=1;
     const float fontSize=1;
+
 
     const String prefix = "E:\\downloads\\";
     QString vocabulary = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";

@@ -114,9 +114,9 @@ void videoReader::timerLoop()
             emit newArrived();
         }
     }else{
-        QFileInfoList filelistinfo = dir->entryInfoList();
-        QString imageFile = filelistinfo.at(currentFrame).absoluteFilePath();
         if(currentFrame<totalFrame){
+            QFileInfoList filelistinfo = dir->entryInfoList();
+            QString imageFile = filelistinfo.at(currentFrame).absoluteFilePath();
             rawFrame = cv::imread(imageFile.toStdString().c_str());
             currentFrame++;
             emit newArrived();

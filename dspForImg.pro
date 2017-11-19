@@ -39,17 +39,15 @@ HEADERS += \
 FORMS += \
         display.ui
 
-# for ubuntu
-#INCLUDEPATH += /usr/local/include \
-#                /usr/local/include/opencv \
-#                /usr/local/include/opencv2
-#LIBS += /usr/local/lib/libopencv_*.so
+win32 {
+    INCLUDEPATH += E:\downloads\opencv\build\include\
+                   E:\downloads\opencv\build\include\opencv\
+                   E:\downloads\opencv\build\include\opencv2
+    LIBS += E:\downloads\opencv\build\x64\vc15/lib/opencv_*.lib
+} else { # default is ubuntu
+    INCLUDEPATH += /usr/local/include \
+                    /usr/local/include/opencv \
+                    /usr/local/include/opencv2
+    LIBS += /usr/local/lib/libopencv_*.so
+}
 
-INCLUDEPATH += E:\downloads\opencv\build\include\
-               E:\downloads\opencv\build\include\opencv\
-               E:\downloads\opencv\build\include\opencv2
-LIBS += E:\downloads\opencv\build/x64/vc15/lib/opencv_*.lib
-
-DISTFILES += \
-    settings.json \
-    README.md

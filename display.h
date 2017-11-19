@@ -41,6 +41,8 @@ private:
     videoReader *vReader;
     imgProcesser *iPro;
     QVariantMap settings;
+
+    QString platformPrefix;
 };
 
 #endif // DISPLAY_H

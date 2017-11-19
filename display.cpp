@@ -7,6 +7,12 @@ display::display(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::display)
 {
+
+    platformPrefix = "/home/meiqua/dspForImg/";
+    #ifdef Q_OS_WIN
+      platformPrefix = "C:\\Users\\Administrator\\Desktop\\dspForImg\\";
+    #endif
+
     ui->setupUi(this);
     centralWidget()->setLayout(ui->centralWgt);
     vReader = new videoReader;
@@ -24,7 +30,7 @@ display::~display()
 void display::on_open_clicked()
 {
     QVariant path = settings["path"];
-    if(vReader->open(path.toString())){
+    if(vReader->open(platformPrefix + path.toString())){
         vReader->timer->start();
         ui->start->setText("pause");
         if(vReader->totalFrame>0){
@@ -61,10 +67,6 @@ void display::on_videoSlider_valueChanged(int value)
 void display::getNewFrame()
 {
     cv::Mat src, dst;
-    int w = ui->src->width();
-    int h = ui->src->height();
-    int w2 = ui->dst->width();
-    int h2 = ui->src->height();
 
     if(vReader->totalFrame>0)// not webcam
     {
@@ -76,14 +78,16 @@ void display::getNewFrame()
         ui->videoSlider->setValue(vReader->currentFrame*99/vReader->totalFrame);
     }
 
-
     src = vReader->rawFrame.clone();
-    cv::resize(src, src, cv::Size(src.size().width,src.size().height), 0, 0, CV_INTER_LINEAR);
-    ui->src->setPixmap(QPixmap::fromImage(ImageFormat::Mat2QImage(src)).scaled(w,h,Qt::KeepAspectRatio));
 
     dst = iPro->process(src);
-    displayMessage(iPro->message);
-    cv::resize(dst, dst, cv::Size(dst.size().width,dst.size().height), 0, 0, CV_INTER_LINEAR);
+
+    int w = ui->src->width();
+    int h = ui->src->height();
+    int w2 = ui->dst->width();
+    int h2 = ui->src->height();
+
+    ui->src->setPixmap(QPixmap::fromImage(ImageFormat::Mat2QImage(src)).scaled(w,h,Qt::KeepAspectRatio));
     ui->dst->setPixmap(QPixmap::fromImage(ImageFormat::Mat2QImage(dst)).scaled(w2,h2,Qt::KeepAspectRatio));
 }
 
@@ -91,10 +95,9 @@ void display::on_refresh_clicked()
 {
     QString val;
     QFile file;
-    // for ubuntu
-    //file.setFileName("/home/meiqua/dspForImg/settings.json");
 
-    file.setFileName("D:\\dspForImg\\settings.json");
+    // for windows
+    file.setFileName(platformPrefix + "settings.json");
     file.open(QIODevice::ReadOnly | QIODevice::Text);
     val = file.readAll();
     file.close();
