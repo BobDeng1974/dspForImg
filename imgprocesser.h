@@ -5,6 +5,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <QVariantMap>
+#include "opencv2/text.hpp"
 #include "opencv2/core/utility.hpp"
 #include "opencv2/features2d.hpp"
 

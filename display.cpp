@@ -81,7 +81,7 @@ void display::getNewFrame()
     src = vReader->rawFrame.clone();
 
     dst = iPro->process(src);
-
+    displayMessage(iPro->message);
     int w = ui->src->width();
     int h = ui->src->height();
     int w2 = ui->dst->width();

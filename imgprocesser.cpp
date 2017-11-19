@@ -44,6 +44,11 @@ cv::Mat imgProcesser::process(const cv::Mat &src)
 //    message = message + "mser time: " + QString::number((int)t_all) + " ms   ";
 //    t_all = (double)cv::getTickCount();
 
+//    for (int i=0; i<(int)mserBbox.size(); i++){
+//        cv::Scalar color = cv::Scalar(rand() % (155) + 100, rand() % 155 + 100, rand() % 155 + 100);
+//        cv::rectangle(out_img, mserBbox[i].tl(), mserBbox[i].br(), color,2);
+//    }
+
     cv::Mat maskS = cv::Mat::zeros(gray.size(), gray.type());
     for(int i=0;i<mserContours.size();i++){
         vector<cv::Point> contour = mserContours[i];
@@ -52,8 +57,8 @@ cv::Mat imgProcesser::process(const cv::Mat &src)
 
          bool flag =   box.height>box.width
                     && box.height<box.width*10
-                    && box.height*20/scale>rows
-                    && box.width*50/scale>cols;
+                    && box.height*40/scale>rows
+                    && box.width*100/scale>cols;
         if(flag){
             cv::Mat mask = cv::Mat::zeros(gray.size(), gray.type());
             for (cv::Point p : contour){
@@ -110,10 +115,12 @@ cv::Mat imgProcesser::process(const cv::Mat &src)
     //find >=3 continue box
     int boxN = nm_boxes.size();
 //    qDebug()<<"boxN: "<<boxN<<endl;
-    for (int i=0; i<(int)nm_boxes.size(); i++){
-        cv::Scalar color = cv::Scalar(0, 0, 0);
-        cv::rectangle(out_img, nm_boxes[i].tl(), nm_boxes[i].br(), color,2);
-    }
+
+//    for (int i=0; i<(int)nm_boxes.size(); i++){
+//        cv::Scalar color = cv::Scalar(rand() % (155) + 100, rand() % 155 + 100, rand() % 155 + 100);
+//        cv::rectangle(out_img, nm_boxes[i].tl(), nm_boxes[i].br(), color,2);
+//    }
+
     if(boxN>0){
         QSet<int> heightPossible;
         for(int i=0;i<boxN;i++){
@@ -146,6 +153,7 @@ cv::Mat imgProcesser::process(const cv::Mat &src)
 //        nm_boxes.clear();
 //        nm_boxes = nm_boxes2;
     }
+
     for (int i=0; i<(int)nm_boxes2.size(); i++){
         cv::Scalar color = cv::Scalar(rand() % (155) + 100, rand() % 155 + 100, rand() % 155 + 100);
         cv::rectangle(out_img, nm_boxes2[i].tl(), nm_boxes2[i].br(), color,2);
@@ -156,77 +164,80 @@ cv::Mat imgProcesser::process(const cv::Mat &src)
 //    t_all = ((double)cv::getTickCount() - t_all)*1000/cv::getTickFrequency();
 //    qDebug()<<"grouping time: "<<std::round(t_all)<<" ms"<<endl;
 
+    bool toOCR=true;
 
-    /*Text Recognition (OCR)*/
-    int bottom_bar_height= out_img.rows/7 ;
-//    copyMakeBorder(dst, out_img, 0, bottom_bar_height, 0, 0, BORDER_CONSTANT, Scalar(150, 150, 150));
-    float scale_font = (float)(bottom_bar_height /85.0);
-    float min_confidence1 = 0.f, min_confidence2 = 0.f;
-    min_confidence1 = 51.f;
-    min_confidence2 = 60.f;
+    if(toOCR){
+        /*Text Recognition (OCR)*/
+        int bottom_bar_height= out_img.rows/14 ;
+    //    copyMakeBorder(dst, out_img, 0, bottom_bar_height, 0, 0, BORDER_CONSTANT, Scalar(150, 150, 150));
+        float scale_font = (float)(bottom_bar_height /85.0);
+        float min_confidence1 = 0.f, min_confidence2 = 0.f;
+        min_confidence1 = 51.f;
+        min_confidence2 = 60.f;
 
-    vector<Mat> detections;
-    for (int i=0; i<(int)nm_boxes2.size(); i++)
-    {
-    //    rectangle(out_img, nm_boxes2[i].tl(), nm_boxes2[i].br(), Scalar(255,255,0),3);
-        Mat group_img = Mat::zeros(dst.rows+2, dst.cols+2, CV_8UC1);
-        gray(nm_boxes2[i]).copyTo(group_img);//webcam_demo.cpp wrong here
-        //copyMakeBorder(group_img,group_img,15,15,15,15,BORDER_CONSTANT,Scalar(0));
+        vector<Mat> detections;
+        for (int i=0; i<(int)nm_boxes2.size(); i++)
+        {
+        //    rectangle(out_img, nm_boxes2[i].tl(), nm_boxes2[i].br(), Scalar(255,255,0),3);
+            Mat group_img = Mat::zeros(dst.rows+2, dst.cols+2, CV_8UC1);
+            gray(nm_boxes2[i]).copyTo(group_img);//webcam_demo.cpp wrong here
+            //copyMakeBorder(group_img,group_img,15,15,15,15,BORDER_CONSTANT,Scalar(0));
 
-        Mat selectedChildren = Mat::zeros(dst.rows+2, dst.cols+2, CV_8UC1);
-        maskS(nm_boxes2[i]).copyTo(selectedChildren);
-        int selectedChildren_height = cv::sum(group_img.mul(selectedChildren))[0]/cv::sum(selectedChildren)[0];
-        int others_height = cv::sum(group_img.mul(1-selectedChildren))[0]/cv::sum(1-selectedChildren)[0];
-        //this is how mser work: select area is high or low?
+            Mat selectedChildren = Mat::zeros(dst.rows+2, dst.cols+2, CV_8UC1);
+            maskS(nm_boxes2[i]).copyTo(selectedChildren);
+            int selectedChildren_height = cv::sum(group_img.mul(selectedChildren))[0]/cv::sum(selectedChildren)[0];
+            int others_height = cv::sum(group_img.mul(1-selectedChildren))[0]/cv::sum(1-selectedChildren)[0];
+            //this is how mser work: select area is high or low?
 
-        threshold(group_img, group_img, 150, 255, THRESH_BINARY|THRESH_OTSU);
-        if(selectedChildren_height>others_height){
-            group_img = 255-group_img; // convert to black-num-white-bg
+            threshold(group_img, group_img, 150, 255, THRESH_BINARY|THRESH_OTSU);
+            if(selectedChildren_height>others_height){
+                group_img = 255-group_img; // convert to black-num-white-bg
+            }
+
+            float imgScale = 20.0/group_img.rows;
+            Size dsize = Size(int(group_img.cols*imgScale),int(group_img.rows*imgScale));
+            cv::resize(group_img,group_img,dsize);
+
+
+
+            int diff1 = (group_img.rows-group_img.cols)/2;
+            int diff2 = (group_img.rows-group_img.cols)/2+(group_img.rows-group_img.cols)%2;
+            copyMakeBorder(group_img,group_img,4,4,
+                           diff1+4,diff2+4,
+                           BORDER_CONSTANT,Scalar(255));
+
+
+            detections.push_back(group_img);
+    //        imshow("to ocr:",group_img);
         }
 
-        float imgScale = 20.0/group_img.rows;
-        Size dsize = Size(int(group_img.cols*imgScale),int(group_img.rows*imgScale));
-        cv::resize(group_img,group_img,dsize);
+        if(settings["p1"].toInt()>0){
+            if(detections.size()>0){
+                imshow("char to ocr",detections[rand()%detections.size()]);
+    //            return detections[rand()%detections.size()];
+            }
 
-
-
-        int diff1 = (group_img.rows-group_img.cols)/2;
-        int diff2 = (group_img.rows-group_img.cols)/2+(group_img.rows-group_img.cols)%2;
-        copyMakeBorder(group_img,group_img,4,4,
-                       diff1+4,diff2+4,
-                       BORDER_CONSTANT,Scalar(255));
-
-
-        detections.push_back(group_img);
-//        imshow("to ocr:",group_img);
-    }
-
-    if(settings["p1"].toInt()>0){
-        if(detections.size()>0){
-            imshow("char to ocr",detections[rand()%detections.size()]);
-//            return detections[rand()%detections.size()];
         }
 
+
+        for (int i=0; i<(int)detections.size(); i++)
+        {
+            string outText;
+            outText = ocrTess->run(detections[i], 65.0);
+            outText.erase(std::remove(outText.begin(), outText.end(), '\n'), outText.end());
+            QString out = QString::fromStdString(outText);
+    //        qDebug()<<out<<endl;
+    //        qDebug() << "OCR output "<< i <<" = \"" << out << "\" with confidence "
+    //             << out_confidences[0]<<endl;
+
+            Size word_size = getTextSize(out.toStdString(), FONT_HERSHEY_SIMPLEX, (double)scale_font, (int)(3*scale_font), NULL);
+            rectangle(out_img, nm_boxes2[i].tl()-Point(3,word_size.height+3), nm_boxes2[i].tl()+Point(word_size.width,0), Scalar(255,0,255),-1);
+            putText(out_img, out.toStdString(), nm_boxes2[i].tl()-Point(1,1), FONT_HERSHEY_SIMPLEX, scale_font, Scalar(255,255,255),(int)(3*scale_font));
+        }
+        t_all = ((double)getTickCount() - t_all)*1000/getTickFrequency();
+    //    qDebug()<<"ocr time: "<<t_all<<endl;
+        message = message + "ocr time: " + QString::number((int)t_all) + " ms   ";
     }
 
-
-    for (int i=0; i<(int)detections.size(); i++)
-    {
-        string outText;
-        outText = ocrTess->run(detections[i], 65.0);
-        outText.erase(std::remove(outText.begin(), outText.end(), '\n'), outText.end());
-        QString out = QString::fromStdString(outText);
-//        qDebug()<<out<<endl;
-//        qDebug() << "OCR output "<< i <<" = \"" << out << "\" with confidence "
-//             << out_confidences[0]<<endl;
-
-        Size word_size = getTextSize(out.toStdString(), FONT_HERSHEY_SIMPLEX, (double)scale_font, (int)(3*scale_font), NULL);
-        rectangle(out_img, nm_boxes2[i].tl()-Point(3,word_size.height+3), nm_boxes2[i].tl()+Point(word_size.width,0), Scalar(255,0,255),-1);
-        putText(out_img, out.toStdString(), nm_boxes2[i].tl()-Point(1,1), FONT_HERSHEY_SIMPLEX, scale_font, Scalar(255,255,255),(int)(3*scale_font));
-    }
-    t_all = ((double)getTickCount() - t_all)*1000/getTickFrequency();
-//    qDebug()<<"ocr time: "<<t_all<<endl;
-    message = message + "ocr time: " + QString::number((int)t_all) + " ms   ";
-//    imshow("out", out_img);
     return out_img;
 }
