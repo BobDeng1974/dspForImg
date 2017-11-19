@@ -64,20 +64,6 @@ void display::on_videoSlider_valueChanged(int value)
     vReader->currentFrame = int(value/99.0*vReader->totalFrame);
 }
 
-int pow2roundup(int x)
-{
-    if (x < 0)
-        return 0;
-    --x;
-    x |= x >> 1;
-    x |= x >> 2;
-    x |= x >> 4;
-    x |= x >> 8;
-    x |= x >> 16;
-    return x+1;
-}
-
-
 void display::getNewFrame()
 {
     cv::Mat src, dst;
@@ -93,11 +79,6 @@ void display::getNewFrame()
     }
 
     src = vReader->rawFrame.clone();
-    int width = (src.cols<src.rows)?src.cols:src.rows;
-    src = src(Rect(0, 0, width, width)); //make src square
-
-    width = pow2roundup(width);
-    cv::resize(src,src,Size(width,width),0,0,CV_INTER_LINEAR);
 
     dst = iPro->process(src);
 
@@ -106,15 +87,8 @@ void display::getNewFrame()
     int w2 = ui->dst->width();
     int h2 = ui->src->height();
 
-    if(settings["ori"].toInt()>0){
-        ui->src->setPixmap(QPixmap::fromImage(ImageFormat::Mat2QImage(src)));
-        ui->dst->setPixmap(QPixmap::fromImage(ImageFormat::Mat2QImage(dst)));
-    }else{
-        ui->src->setPixmap(QPixmap::fromImage(ImageFormat::Mat2QImage(src)).scaled(w,h,Qt::KeepAspectRatio));
-        ui->dst->setPixmap(QPixmap::fromImage(ImageFormat::Mat2QImage(dst)).scaled(w2,h2,Qt::KeepAspectRatio));
-    }
-
-
+    ui->src->setPixmap(QPixmap::fromImage(ImageFormat::Mat2QImage(src)).scaled(w,h,Qt::KeepAspectRatio));
+    ui->dst->setPixmap(QPixmap::fromImage(ImageFormat::Mat2QImage(dst)).scaled(w2,h2,Qt::KeepAspectRatio));
 }
 
 void display::on_refresh_clicked()
