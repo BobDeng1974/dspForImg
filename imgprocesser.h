@@ -28,7 +28,7 @@ public:
     const String prefix = "E:\\downloads\\";
     QString vocabulary = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     // must have the same order as the classifier output classes
-    Ptr<OCRHMMDecoder::ClassifierCallback> ocrHMM_CNN = loadOCRHMMClassifierCNN(prefix+"OCRBeamSearch_CNN_model_data.xml.gz");
+//    Ptr<OCRHMMDecoder::ClassifierCallback> ocrHMM_CNN = loadOCRHMMClassifierCNN(prefix+"OCRBeamSearch_CNN_model_data.xml.gz");
     Ptr<OCRTesseract> ocrTess = OCRTesseract::create(NULL,NULL,"0123456789ABCDEF",OEM_DEFAULT,PSM_SINGLE_CHAR);
 };
 

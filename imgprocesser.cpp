@@ -18,7 +18,6 @@ cv::Mat imgProcesser::process(const cv::Mat &src)
     cv::Mat out_img = src.clone();
 
 //    pyrDown( dst, dst);
-//  pyrDown( dst, dst);
 
 
 
@@ -32,10 +31,10 @@ cv::Mat imgProcesser::process(const cv::Mat &src)
 //    qDebug()<<"preprocess time: "<<t_all<<endl;
 //    t_all = (double)getTickCount();
 
-    cv::Ptr<cv::MSER> mserExtractor = cv::MSER::create(21,
-                         (int)(0.00002*cols*rows), (int)(0.05*cols*rows), 1, 0.7);
+//    cv::Ptr<cv::MSER> mserExtractor = cv::MSER::create(21,
+//                         (int)(0.00002*cols*rows), (int)(0.05*cols*rows), 1, 0.7);
 
-//    cv::Ptr<cv::MSER> mserExtractor = cv::MSER::create();
+    cv::Ptr<cv::MSER> mserExtractor = cv::MSER::create();
     vector<vector<cv::Point>> mserContours, contoursFilted;
     vector<cv::Rect> mserBbox, boxsFiltered;
     mserExtractor->detectRegions(gray, mserContours,  mserBbox);
