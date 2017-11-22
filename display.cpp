@@ -10,7 +10,8 @@ display::display(QWidget *parent) :
 
     platformPrefix = "/home/meiqua/dspForImg/";
     #ifdef Q_OS_WIN
-      platformPrefix = "C:\\Users\\Administrator\\Desktop\\dspForImg\\";
+//      platformPrefix = "C:\\Users\\Administrator\\Desktop\\dspForImg\\";
+          platformPrefix = "C:\\Users\\meiqua\\Documents\\GitHub\\dspForImg\\";
     #endif
 
     ui->setupUi(this);

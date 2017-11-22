@@ -40,10 +40,15 @@ FORMS += \
         display.ui
 
 win32 {
-    INCLUDEPATH += E:\downloads\opencv\build\include\
-                   E:\downloads\opencv\build\include\opencv\
-                   E:\downloads\opencv\build\include\opencv2
-    LIBS += E:\downloads\opencv\build\x64\vc15/lib/opencv_*.lib
+#    INCLUDEPATH += E:\downloads\opencv\build\include\
+#                   E:\downloads\opencv\build\include\opencv\
+#                   E:\downloads\opencv\build\include\opencv2
+#    LIBS += E:\downloads\opencv\build\x64\vc15/lib/opencv_*.lib
+
+    INCLUDEPATH += C:\env\opencv\include\
+                   C:\env\opencv\include\opencv\
+                   C:\env\opencv\include\opencv2
+    LIBS += C:\env\opencv\x64\vc15\lib\opencv_*.lib
 } else { # default is ubuntu
     INCLUDEPATH += /usr/local/include \
                     /usr/local/include/opencv \
